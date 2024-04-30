@@ -5,6 +5,8 @@
 #include <QXmlStreamReader>
 #include <QStack>
 #include <QDebug>
+#include <QVariant>
+#include <QStandardItemModel>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -30,38 +32,46 @@ void MainWindow::on_actionOpen_triggered()
             qDebug() << "Error while opening file. Try another";
         can_open_file = true;
     }
-    qDebug() << "Open " << fileName;
+
+    QStandardItemModel *model = new QStandardItemModel(0, 0, ui->treeView);
+    QStandardItem *parentItem = model->invisibleRootItem();
+    ui->treeView->setModel(model);
+
     QXmlStreamReader xmlReader(&file);
-    QList<QTreeWidgetItem *> items;
-    QStack<QTreeWidgetItem *> elements;
-    elements.push(nullptr);
+    QStack<QStandardItem *> tags;
+    tags.push(parentItem);
     while(!xmlReader.atEnd()){
         xmlReader.readNext();
         switch (xmlReader.tokenType()){
-        case QXmlStreamReader::StartElement: {
-            auto value = new QTreeWidgetItem(elements.top(), QStringList(xmlReader.name().toString()));
-            foreach(const QXmlStreamAttribute &attr, xmlReader.attributes()) {
-                int row_num  = ui->tableWidget->rowCount();
-                ui->tableWidget->insertRow(row_num);
-                ui->tableWidget->setItem(row_num, 0, new QTableWidgetItem(attr.name().toString()));
-                ui->tableWidget->setItem(row_num, 1, new QTableWidgetItem(attr.value().toString()));
+        case QXmlStreamReader::StartElement: { // открывающий тэг
+            auto new_tag = new QStandardItem(xmlReader.name().toString());
+            auto parent_tag = tags.top();
+            parent_tag->appendRow(new_tag);
+            auto table_model = new QStandardItemModel();
+            for(const QXmlStreamAttribute &attr: xmlReader.attributes()) {
+                auto attr_name_item = new QStandardItem(attr.name().toString());
+                auto attr_value_item = new QStandardItem(attr.value().toString());
+                int row_count = table_model->rowCount();
+                table_model->insertRow(row_count, QList<QStandardItem *>({attr_name_item, attr_value_item}));
             }
-            value->setFlags(value->flags() | Qt::ItemIsEditable);
-            items.append(value);
-            elements.push(value);
+            table_model->setHorizontalHeaderLabels(QStringList({"Attribute", "Value"}));
+            QVariant table_model_variant;
+            table_model_variant.setValue(table_model);
+            new_tag->setData(table_model_variant);
+            new_tag->setFlags(new_tag->flags() | Qt::ItemIsEditable);
+            tags.push(new_tag);
             break;
         }
-        case QXmlStreamReader::Characters: {
+        case QXmlStreamReader::Characters: { // текст внутри тэга
             QString str = xmlReader.text().toString().trimmed();
             if (!str.isEmpty()) {
-                auto value = new QTreeWidgetItem(elements.top(), QStringList(str));
-                value->setFlags(value->flags() | Qt::ItemIsEditable);
-                items.append(value);
+                auto tag = tags.top();
+                tag->setText(tag->text() + ": " + str);
             }
             break;
         }
         case QXmlStreamReader::EndElement: {
-            elements.pop();
+            tags.pop();
             break;
         }
         case QXmlStreamReader::StartDocument:
@@ -73,13 +83,11 @@ void MainWindow::on_actionOpen_triggered()
         }
         }
     }
-    ui->treeWidget->addTopLevelItems(items);
-    ui->treeWidget->resizeColumnToContents(0);
+    ui->treeView->resizeColumnToContents(0);
     file.close(); // Закрываем файл
 }
 
-void MainWindow::on_treeWidget_itemClicked(QTreeWidgetItem *item, int column)
+void MainWindow::on_treeView_clicked(const QModelIndex &index)
 {
-
+    ui->tableView->setModel(index.data(Qt::UserRole + 1).value<QStandardItemModel*>());
 }
-

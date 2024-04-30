@@ -19,7 +19,7 @@ public:
 private slots:
     void on_actionOpen_triggered();
 
-    void on_treeWidget_itemClicked(QTreeWidgetItem *item, int column);
+    void on_treeView_clicked(const QModelIndex &index);
 
 private:
     Ui::MainWindow *ui;

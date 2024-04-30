@@ -10,12 +10,10 @@ CONFIG += c++11
 
 SOURCES += \
     main.cpp \
-    mainwindow.cpp \
-    qtagmodel.cpp
+    mainwindow.cpp
 
 HEADERS += \
-    mainwindow.h \
-    qtagmodel.h
+    mainwindow.h
 
 FORMS += \
     mainwindow.ui
