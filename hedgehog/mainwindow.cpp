@@ -7,6 +7,7 @@
 #include <QDebug>
 #include <QVariant>
 #include <QStandardItemModel>
+#include <QMessageBox>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -22,33 +23,37 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_actionOpen_triggered()
 {
-    bool can_open_file = false;
-    QString fileName;
-    QFile file;
-    while(!can_open_file) {
-        fileName = QFileDialog::getOpenFileName(this, tr("Open file"), "C:/", tr("XML files (*.xml)"));
-        file.setFileName(fileName);
-        if(!file.open(QIODevice::ReadOnly))
-            qDebug() << "Error while opening file. Try another";
-        can_open_file = true;
+    QString file_name = QFileDialog::getOpenFileName(this, tr("Open file"), "C:/", tr("XML files (*.xml)"));;
+    if(file_name.size() == 0)
+    {
+        QMessageBox::warning(this, "Внимание", "Файл не был выбран");
+        return;
+    }
+    QFile file(file_name);
+    if(!file.open(QIODevice::ReadOnly))
+    {
+        QMessageBox::critical(this, "Ошибка", "Не удалось открыть файл " + file_name);
+        return;
     }
 
     QStandardItemModel *model = new QStandardItemModel(0, 0, ui->treeView);
-    QStandardItem *parentItem = model->invisibleRootItem();
+    QStandardItem *parent_item = model->invisibleRootItem();
     ui->treeView->setModel(model);
 
-    QXmlStreamReader xmlReader(&file);
+    QXmlStreamReader xml_reader(&file);
     QStack<QStandardItem *> tags;
-    tags.push(parentItem);
-    while(!xmlReader.atEnd()){
-        xmlReader.readNext();
-        switch (xmlReader.tokenType()){
-        case QXmlStreamReader::StartElement: { // открывающий тэг
-            auto new_tag = new QStandardItem(xmlReader.name().toString());
+    tags.push(parent_item);
+    while(!xml_reader.atEnd()){
+        xml_reader.readNext();
+        switch (xml_reader.tokenType()){
+        case QXmlStreamReader::StartElement:
+        { // открывающий тэг
+            auto new_tag = new QStandardItem(xml_reader.name().toString());
             auto parent_tag = tags.top();
             parent_tag->appendRow(new_tag);
             auto table_model = new QStandardItemModel();
-            for(const QXmlStreamAttribute &attr: xmlReader.attributes()) {
+            for(auto &attr: xml_reader.attributes())
+            {
                 auto attr_name_item = new QStandardItem(attr.name().toString());
                 auto attr_value_item = new QStandardItem(attr.value().toString());
                 int row_count = table_model->rowCount();
@@ -62,29 +67,87 @@ void MainWindow::on_actionOpen_triggered()
             tags.push(new_tag);
             break;
         }
-        case QXmlStreamReader::Characters: { // текст внутри тэга
-            QString str = xmlReader.text().toString().trimmed();
-            if (!str.isEmpty()) {
+        case QXmlStreamReader::Characters:
+        { // текст внутри тэга
+            QString str = xml_reader.text().toString().trimmed();
+            if (!str.isEmpty())
+            {
                 auto tag = tags.top();
                 tag->setText(tag->text() + ": " + str);
             }
             break;
         }
-        case QXmlStreamReader::EndElement: {
+        case QXmlStreamReader::EndElement:
+        {
             tags.pop();
             break;
         }
         case QXmlStreamReader::StartDocument:
         case QXmlStreamReader::EndDocument:
             break;
-        default: {
-            qDebug() << "error: unexpected token type " << xmlReader.tokenType();
+        default:
+        {
+            qDebug() << "error: unexpected token type " << xml_reader.tokenType();
             break;
         }
         }
     }
     ui->treeView->resizeColumnToContents(0);
     file.close(); // Закрываем файл
+}
+
+static void writeAttributes(QXmlStreamWriter& xml_writer, const QStandardItemModel* model)
+{
+    for(int r = 0; r < model->rowCount(); ++r) {
+        auto &&name = model->item(r, 0)->text();
+        auto &&value = model->item(r, 1)->text();
+        xml_writer.writeAttribute(name, value);
+    }
+}
+
+static void writeTree(QXmlStreamWriter& xml_writer, const QStandardItem* root)
+{
+    auto &&tag_data = root->text().split(": ");
+    xml_writer.writeStartElement(tag_data.front());
+    auto &&model = root->data(Qt::UserRole + 1).value<QStandardItemModel*>();
+    writeAttributes(xml_writer, model);
+    if (tag_data.size() > 1)
+    {
+        tag_data.pop_front();
+        xml_writer.writeCharacters(tag_data.join(": "));
+    }
+    for(int r = 0; root->hasChildren() && r < root->rowCount(); ++r)
+    {
+        auto &&item = root->child(r);
+        writeTree(xml_writer, item);
+    }
+    xml_writer.writeEndElement();
+}
+
+void MainWindow::on_actionSave_triggered()
+{
+    QString file_name = QFileDialog::getSaveFileName(this, tr("Save As"), "C:/", tr("XML files (*.xml)"));
+    if(file_name.size() == 0)
+    {
+        QMessageBox::warning(this, "Внимание", "Файл не был выбран");
+        return;
+    }
+    QFile file(file_name);
+    if (!file.open(QIODevice::WriteOnly))
+    {
+        QMessageBox::critical(this, "Ошибка", "Не удалось открыть файл " + file_name);
+        return;
+    }
+
+    QXmlStreamWriter xml_writer(&file);
+    xml_writer.setAutoFormatting(true);  // Устанавливаем автоформатирование текста
+
+    auto &&model = dynamic_cast<QStandardItemModel*>(ui->treeView->model());
+    auto &&first_item = model->item(0, 0);
+    xml_writer.writeStartDocument();
+    writeTree(xml_writer, first_item);
+    xml_writer.writeEndDocument();
+    file.close();
 }
 
 void MainWindow::on_treeView_clicked(const QModelIndex &index)
