@@ -14,6 +14,12 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    ui->tableWidget->setRowCount(2);
+    ui->tableWidget->setColumnCount(2);
+    ui->tableWidget->setCellWidget(0, 0, ui->treeView);
+    ui->tableWidget->setCellWidget(1, 0, ui->tableView);
+    ui->tableWidget->setCellWidget(0, 1, ui->textEdit);
+    ui->tableWidget->setCellWidget(1, 1, ui->graphicsView);
 }
 
 MainWindow::~MainWindow()
