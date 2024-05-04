@@ -14,11 +14,32 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+    auto model = new QStandardItemModel(0, 0, ui->treeView);
+    ui->treeView->setModel(model);
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+static QStandardItem *createTag(QStandardItem * parent_tag, QStandardItemModel *attribute_table_view, const QString &text)
+{
+    if(attribute_table_view == nullptr)
+    {
+        attribute_table_view = new QStandardItemModel();
+        attribute_table_view->setHorizontalHeaderLabels(QStringList({"Attribute", "Value"}));
+        attribute_table_view->insertRow(0, new QStandardItem(""));
+    }
+
+    auto new_tag = new QStandardItem(text);
+    parent_tag->appendRow(new_tag);
+    QVariant table_model_variant;
+    table_model_variant.setValue(attribute_table_view);
+    new_tag->setData(table_model_variant);
+    new_tag->setFlags(new_tag->flags() | Qt::ItemIsEditable);
+    return new_tag;
 }
 
 void MainWindow::on_actionOpen_triggered()
@@ -36,9 +57,10 @@ void MainWindow::on_actionOpen_triggered()
         return;
     }
 
-    QStandardItemModel *model = new QStandardItemModel(0, 0, ui->treeView);
+    QStandardItemModel* model = nullptr;
+    if (!(model = qobject_cast<QStandardItemModel*>(ui->treeView->model())))
+        qDebug() << "Error: can't cast treeView->model() to QStandardItemModel*";
     QStandardItem *parent_item = model->invisibleRootItem();
-    ui->treeView->setModel(model);
 
     QXmlStreamReader xml_reader(&file);
     QStack<QStandardItem *> tags;
@@ -48,9 +70,6 @@ void MainWindow::on_actionOpen_triggered()
         switch (xml_reader.tokenType()){
         case QXmlStreamReader::StartElement:
         { // открывающий тэг
-            auto new_tag = new QStandardItem(xml_reader.name().toString());
-            auto parent_tag = tags.top();
-            parent_tag->appendRow(new_tag);
             auto table_model = new QStandardItemModel();
             for(auto &attr: xml_reader.attributes())
             {
@@ -60,10 +79,7 @@ void MainWindow::on_actionOpen_triggered()
                 table_model->insertRow(row_count, QList<QStandardItem *>({attr_name_item, attr_value_item}));
             }
             table_model->setHorizontalHeaderLabels(QStringList({"Attribute", "Value"}));
-            QVariant table_model_variant;
-            table_model_variant.setValue(table_model);
-            new_tag->setData(table_model_variant);
-            new_tag->setFlags(new_tag->flags() | Qt::ItemIsEditable);
+            auto &&new_tag = createTag(tags.top(), table_model, xml_reader.name().toString());
             tags.push(new_tag);
             break;
         }
@@ -150,13 +166,18 @@ void MainWindow::on_actionSave_triggered()
     file.close();
 }
 
+static void setDisableForLayoutElements(QLayout* layout, bool is_disabled)
+{
+    for(int i =  0; i < layout->count(); ++i)
+    {
+        layout->itemAt(i)->widget()->setDisabled(is_disabled);
+    }
+}
+
 void MainWindow::on_treeView_clicked(const QModelIndex &index)
 {
     ui->tableView->setModel(index.data(Qt::UserRole + 1).value<QStandardItemModel*>());
-    for(int i =  0; i < ui->horizontalLayout->count(); ++i)
-    {
-        ui->horizontalLayout->itemAt(i)->widget()->setDisabled(false);
-    }
+    setDisableForLayoutElements(ui->horizontalLayout, false);
     if(index.parent() == ui->treeView->rootIndex())
     {
         ui->pushButton_plus->setDisabled(true);
@@ -165,9 +186,27 @@ void MainWindow::on_treeView_clicked(const QModelIndex &index)
 
 void MainWindow::on_pushButton_plus_clicked()
 {
+    if(ui->treeView->model()->rowCount() == 0)
+    {
+        QStandardItemModel* model = nullptr;
+        if (!(model = qobject_cast<QStandardItemModel*>(ui->treeView->model())))
+        {
+            qDebug() << "Error: can't cast treeView->model() to QStandardItemModel*";
+            return;
+        }
+        QStandardItem *parent_item = model->invisibleRootItem();
+        auto new_tag = createTag(parent_item, nullptr, "");
+        ui->treeView->selectionModel()->select(new_tag->index(), QItemSelectionModel::ClearAndSelect);
+        ui->treeView->edit(new_tag->index());
+        setDisableForLayoutElements(ui->horizontalLayout, false);
+        return;
+    }
+
     QModelIndexList indexes = ui->treeView->selectionModel()->selectedIndexes();
     if (indexes.size() == 1) {
         QModelIndex selected_index = indexes.at(0);
+        if(selected_index == ui->treeView->rootIndex())
+            return;
         ui->treeView->model()->insertRow(selected_index.row() + 1, selected_index.parent());
 
         QModelIndex insertedElement = selected_index.siblingAtRow(selected_index.row() + 1);
@@ -186,15 +225,13 @@ void MainWindow::on_pushButton_minus_clicked()
         QModelIndex selectedIndex = indexes.at(0);
         ui->treeView->model()->removeRow(selectedIndex.row(), selectedIndex.parent());
     }
-    if (ui->treeView->children().size() == 0)
+    if (ui->treeView->model()->rowCount() == 0)
     {
-        for(int i =  0; i < ui->horizontalLayout->count(); ++i)
-        {
-            ui->horizontalLayout->itemAt(i)->widget()->setDisabled(false);
-        }
+        ui->tableView->setModel(nullptr);
+        setDisableForLayoutElements(ui->horizontalLayout, true);
+        ui->pushButton_plus->setDisabled(false);
     }
 }
-
 
 void MainWindow::on_pushButton_new_child_clicked()
 {
@@ -211,9 +248,7 @@ void MainWindow::on_pushButton_new_child_clicked()
                 {
                     selected_tag->setText(tag_text_vec[0]);
                 }
-
-                auto child_tag = new QStandardItem();
-                selected_tag->insertRow(0, child_tag);
+                auto child_tag = createTag(selected_tag, nullptr, "");
                 ui->treeView->expand(selected_tag->index());
                 ui->treeView->selectionModel()->select(child_tag->index(), QItemSelectionModel::ClearAndSelect);
                 ui->treeView->edit(child_tag->index());
