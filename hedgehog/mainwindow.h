@@ -23,11 +23,15 @@ private slots:
 
     void on_treeView_clicked(const QModelIndex &index);
 
-    void on_pushButton_plus_clicked();
+    void on_pushButton_plus_tree_clicked();
 
-    void on_pushButton_minus_clicked();
+    void on_pushButton_minus_tree_clicked();
 
-    void on_pushButton_new_child_clicked();
+    void on_pushButton_new_child_row_tree_clicked();
+
+    void on_pushButton_plus_table_clicked();
+
+    void on_pushButton_minus_table_clicked();
 
 private:
     Ui::MainWindow *ui;

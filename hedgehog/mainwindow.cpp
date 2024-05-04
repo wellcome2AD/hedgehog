@@ -30,7 +30,6 @@ static QStandardItem *createTag(QStandardItem * parent_tag, QStandardItemModel *
     {
         attribute_table_view = new QStandardItemModel();
         attribute_table_view->setHorizontalHeaderLabels(QStringList({"Attribute", "Value"}));
-        attribute_table_view->insertRow(0, new QStandardItem(""));
     }
 
     auto new_tag = new QStandardItem(text);
@@ -57,9 +56,10 @@ void MainWindow::on_actionOpen_triggered()
         return;
     }
 
-    QStandardItemModel* model = nullptr;
-    if (!(model = qobject_cast<QStandardItemModel*>(ui->treeView->model())))
-        qDebug() << "Error: can't cast treeView->model() to QStandardItemModel*";
+    delete ui->treeView->model();
+    delete ui->tableView->model();
+    QStandardItemModel* model = new QStandardItemModel(0, 0, ui->treeView);
+    ui->treeView->setModel(model);
     QStandardItem *parent_item = model->invisibleRootItem();
 
     QXmlStreamReader xml_reader(&file);
@@ -75,8 +75,7 @@ void MainWindow::on_actionOpen_triggered()
             {
                 auto attr_name_item = new QStandardItem(attr.name().toString());
                 auto attr_value_item = new QStandardItem(attr.value().toString());
-                int row_count = table_model->rowCount();
-                table_model->insertRow(row_count, QList<QStandardItem *>({attr_name_item, attr_value_item}));
+                table_model->appendRow(QList<QStandardItem *>({attr_name_item, attr_value_item}));
             }
             table_model->setHorizontalHeaderLabels(QStringList({"Attribute", "Value"}));
             auto &&new_tag = createTag(tags.top(), table_model, xml_reader.name().toString());
@@ -170,7 +169,8 @@ static void setDisableForLayoutElements(QLayout* layout, bool is_disabled)
 {
     for(int i =  0; i < layout->count(); ++i)
     {
-        layout->itemAt(i)->widget()->setDisabled(is_disabled);
+        if (auto &&button = qobject_cast<QPushButton*>(layout->itemAt(i)->widget()))
+            button->setDisabled(is_disabled);
     }
 }
 
@@ -178,13 +178,14 @@ void MainWindow::on_treeView_clicked(const QModelIndex &index)
 {
     ui->tableView->setModel(index.data(Qt::UserRole + 1).value<QStandardItemModel*>());
     setDisableForLayoutElements(ui->horizontalLayout, false);
+    setDisableForLayoutElements(ui->horizontalLayout_2, false);
     if(index.parent() == ui->treeView->rootIndex())
     {
-        ui->pushButton_plus->setDisabled(true);
+        ui->pushButton_plus_tree->setDisabled(true);
     }
 }
 
-void MainWindow::on_pushButton_plus_clicked()
+void MainWindow::on_pushButton_plus_tree_clicked()
 {
     if(ui->treeView->model()->rowCount() == 0)
     {
@@ -207,17 +208,20 @@ void MainWindow::on_pushButton_plus_clicked()
         QModelIndex selected_index = indexes.at(0);
         if(selected_index == ui->treeView->rootIndex())
             return;
-        ui->treeView->model()->insertRow(selected_index.row() + 1, selected_index.parent());
 
-        QModelIndex insertedElement = selected_index.siblingAtRow(selected_index.row() + 1);
-
-        ui->treeView->selectionModel()->select(insertedElement, QItemSelectionModel::ClearAndSelect);
-        ui->treeView->edit(insertedElement);
-
+        if (auto && model = qobject_cast<const QStandardItemModel*>(ui->treeView->model()))
+        {
+            if (auto && selected_tag = model->itemFromIndex(selected_index))
+            {
+                auto child_tag = createTag(selected_tag->parent(), nullptr, "");
+                ui->treeView->selectionModel()->select(child_tag->index(), QItemSelectionModel::ClearAndSelect);
+                ui->treeView->edit(child_tag->index());
+            }
+        }
     }
 }
 
-void MainWindow::on_pushButton_minus_clicked()
+void MainWindow::on_pushButton_minus_tree_clicked()
 {
     QModelIndexList indexes = ui->treeView->selectionModel()->selectedIndexes();
     if (indexes.size() == 1) {
@@ -229,18 +233,18 @@ void MainWindow::on_pushButton_minus_clicked()
     {
         ui->tableView->setModel(nullptr);
         setDisableForLayoutElements(ui->horizontalLayout, true);
-        ui->pushButton_plus->setDisabled(false);
+        ui->pushButton_plus_tree->setDisabled(false);
     }
 }
 
-void MainWindow::on_pushButton_new_child_clicked()
+void MainWindow::on_pushButton_new_child_row_tree_clicked()
 {
     QModelIndexList indexes = ui->treeView->selectionModel()->selectedIndexes();
     if (indexes.size() == 1) {
-        QModelIndex index = indexes.at(0);
+        QModelIndex selected_index = indexes.at(0);
         if (auto && model = qobject_cast<const QStandardItemModel*>(ui->treeView->model()))
         {
-            if (auto && selected_tag = model->itemFromIndex(index))
+            if (auto && selected_tag = model->itemFromIndex(selected_index))
             {
                 auto &&tag_text = selected_tag->text();
                 auto &&tag_text_vec = tag_text.split(": ");
@@ -254,6 +258,55 @@ void MainWindow::on_pushButton_new_child_clicked()
                 ui->treeView->edit(child_tag->index());
             }
         }
+    }
+}
+
+
+void MainWindow::on_pushButton_plus_table_clicked()
+{
+    // попробовать добавить просто строку в таблицу. может быть, это обновит data элемента treeView
+    QModelIndexList tree_indexes = ui->treeView->selectionModel()->selectedIndexes();
+    if (tree_indexes.size() == 1) {
+        QModelIndex selected_tree_index = tree_indexes.at(0);
+
+        if (auto && model = qobject_cast<const QStandardItemModel*>(ui->treeView->model()))
+        {
+            if (auto && selected_tag = model->itemFromIndex(selected_tree_index))
+            {
+                auto &&data = selected_tag->data(Qt::UserRole + 1).value<QStandardItemModel*>();
+                auto &&new_attr = new QStandardItem();
+                data->appendRow(new_attr);
+                QVariant data_variant;
+                data_variant.setValue(data);
+                selected_tag->setData(data_variant, Qt::UserRole + 1);
+
+                ui->tableView->selectionModel()->select(new_attr->index(), QItemSelectionModel::ClearAndSelect);
+                ui->tableView->edit(new_attr->index());
+            }
+        }
+    }
+}
+
+
+void MainWindow::on_pushButton_minus_table_clicked()
+{
+    // попробовать удалить просто строку из таблицы. может быть, это обновит data элемента treeView
+    QModelIndexList tree_indexes = ui->treeView->selectionModel()->selectedIndexes();
+    if (tree_indexes.size() == 1) {
+        QModelIndex selected_tree_index = tree_indexes.at(0);
+
+        if (auto && model = qobject_cast<const QStandardItemModel*>(ui->treeView->model()))
+        {
+            if (auto && selected_tag = model->itemFromIndex(selected_tree_index))
+            {
+                auto &&data = selected_tag->data(Qt::UserRole + 1).value<QStandardItemModel*>();
+                data->removeRow(data->rowCount());
+                QVariant data_variant;
+                data_variant.setValue(data);
+                selected_tag->setData(data_variant, Qt::UserRole + 1);
+            }
+        }
+        ui->tableView->model()->removeRow(ui->tableView->model()->rowCount());
     }
 }
 
