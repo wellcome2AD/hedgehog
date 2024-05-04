@@ -135,7 +135,7 @@ void MainWindow::on_actionSave_triggered()
     QFile file(file_name);
     if (!file.open(QIODevice::WriteOnly))
     {
-        QMessageBox::critical(this, "Ошибка", "Не удалось открыть файл " + file_name);
+        QMessageBox::critical(this, "Ошибка", "Не удалось сохранить в файл " + file_name);
         return;
     }
 
@@ -153,4 +153,72 @@ void MainWindow::on_actionSave_triggered()
 void MainWindow::on_treeView_clicked(const QModelIndex &index)
 {
     ui->tableView->setModel(index.data(Qt::UserRole + 1).value<QStandardItemModel*>());
+    for(int i =  0; i < ui->horizontalLayout->count(); ++i)
+    {
+        ui->horizontalLayout->itemAt(i)->widget()->setDisabled(false);
+    }
+    if(index.parent() == ui->treeView->rootIndex())
+    {
+        ui->pushButton_plus->setDisabled(true);
+    }
 }
+
+void MainWindow::on_pushButton_plus_clicked()
+{
+    QModelIndexList indexes = ui->treeView->selectionModel()->selectedIndexes();
+    if (indexes.size() == 1) {
+        QModelIndex selected_index = indexes.at(0);
+        ui->treeView->model()->insertRow(selected_index.row() + 1, selected_index.parent());
+
+        QModelIndex insertedElement = selected_index.siblingAtRow(selected_index.row() + 1);
+
+        ui->treeView->selectionModel()->select(insertedElement, QItemSelectionModel::ClearAndSelect);
+        ui->treeView->edit(insertedElement);
+
+    }
+}
+
+void MainWindow::on_pushButton_minus_clicked()
+{
+    QModelIndexList indexes = ui->treeView->selectionModel()->selectedIndexes();
+    if (indexes.size() == 1) {
+
+        QModelIndex selectedIndex = indexes.at(0);
+        ui->treeView->model()->removeRow(selectedIndex.row(), selectedIndex.parent());
+    }
+    if (ui->treeView->children().size() == 0)
+    {
+        for(int i =  0; i < ui->horizontalLayout->count(); ++i)
+        {
+            ui->horizontalLayout->itemAt(i)->widget()->setDisabled(false);
+        }
+    }
+}
+
+
+void MainWindow::on_pushButton_new_child_clicked()
+{
+    QModelIndexList indexes = ui->treeView->selectionModel()->selectedIndexes();
+    if (indexes.size() == 1) {
+        QModelIndex index = indexes.at(0);
+        if (auto && model = qobject_cast<const QStandardItemModel*>(ui->treeView->model()))
+        {
+            if (auto && selected_tag = model->itemFromIndex(index))
+            {
+                auto &&tag_text = selected_tag->text();
+                auto &&tag_text_vec = tag_text.split(": ");
+                if(tag_text_vec.size() > 1)
+                {
+                    selected_tag->setText(tag_text_vec[0]);
+                }
+
+                auto child_tag = new QStandardItem();
+                selected_tag->insertRow(0, child_tag);
+                ui->treeView->expand(selected_tag->index());
+                ui->treeView->selectionModel()->select(child_tag->index(), QItemSelectionModel::ClearAndSelect);
+                ui->treeView->edit(child_tag->index());
+            }
+        }
+    }
+}
+
