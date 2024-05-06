@@ -1,13 +1,14 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "qlineeditdelegate.h"
 
 #include <QFileDialog>
 #include <QXmlStreamReader>
 #include <QStack>
 #include <QDebug>
 #include <QVariant>
-#include <QStandardItemModel>
 #include <QMessageBox>
+#include <QTimer>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -17,6 +18,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     auto model = new QStandardItemModel(0, 0, ui->treeView);
     ui->treeView->setModel(model);
+    ui->treeView->setItemDelegateForColumn(0, new QLineEditDelegate(ui->treeView));
 }
 
 MainWindow::~MainWindow()
@@ -24,7 +26,7 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-static QStandardItem *createTag(QStandardItem * parent_tag, QStandardItemModel *attribute_table_view, const QString &text)
+QStandardItem *MainWindow::createTag(QStandardItem * parent_tag, QStandardItemModel *attribute_table_view, const QString &text)
 {
     if(attribute_table_view == nullptr)
     {
@@ -32,7 +34,7 @@ static QStandardItem *createTag(QStandardItem * parent_tag, QStandardItemModel *
         attribute_table_view->setHorizontalHeaderLabels(QStringList({"Attribute", "Value"}));
     }
 
-    auto new_tag = new QStandardItem(text);
+    auto new_tag = new QStandardItem(text.isEmpty()? "tag_name" : text);
     parent_tag->appendRow(new_tag);
     QVariant table_model_variant;
     table_model_variant.setValue(attribute_table_view);
@@ -200,13 +202,14 @@ void MainWindow::on_pushButton_plus_tree_clicked()
         ui->treeView->selectionModel()->select(new_tag->index(), QItemSelectionModel::ClearAndSelect);
         ui->treeView->edit(new_tag->index());
         setDisableForLayoutElements(ui->horizontalLayout, false);
+        ui->pushButton_plus_tree->setDisabled(true);
         return;
     }
 
     QModelIndexList indexes = ui->treeView->selectionModel()->selectedIndexes();
     if (indexes.size() == 1) {
         QModelIndex selected_index = indexes.at(0);
-        if(selected_index == ui->treeView->rootIndex())
+        if(selected_index.parent() == ui->treeView->rootIndex())
             return;
 
         if (auto && model = qobject_cast<const QStandardItemModel*>(ui->treeView->model()))
@@ -261,52 +264,26 @@ void MainWindow::on_pushButton_new_child_row_tree_clicked()
     }
 }
 
-
 void MainWindow::on_pushButton_plus_table_clicked()
 {
-    // попробовать добавить просто строку в таблицу. может быть, это обновит data элемента treeView
     QModelIndexList tree_indexes = ui->treeView->selectionModel()->selectedIndexes();
     if (tree_indexes.size() == 1) {
-        QModelIndex selected_tree_index = tree_indexes.at(0);
-
-        if (auto && model = qobject_cast<const QStandardItemModel*>(ui->treeView->model()))
-        {
-            if (auto && selected_tag = model->itemFromIndex(selected_tree_index))
-            {
-                auto &&data = selected_tag->data(Qt::UserRole + 1).value<QStandardItemModel*>();
-                auto &&new_attr = new QStandardItem();
-                data->appendRow(new_attr);
-                QVariant data_variant;
-                data_variant.setValue(data);
-                selected_tag->setData(data_variant, Qt::UserRole + 1);
-
-                ui->tableView->selectionModel()->select(new_attr->index(), QItemSelectionModel::ClearAndSelect);
-                ui->tableView->edit(new_attr->index());
-            }
-        }
-    }
+        int row_to_insert = ui->tableView->model()->rowCount();
+        ui->tableView->model()->insertRow(row_to_insert);
+        auto &&index_to_insert = ui->tableView->model()->index(row_to_insert, 0);
+        ui->tableView->selectionModel()->select(index_to_insert, QItemSelectionModel::ClearAndSelect);
+        ui->tableView->edit(index_to_insert);
+    }    
 }
-
 
 void MainWindow::on_pushButton_minus_table_clicked()
 {
-    // попробовать удалить просто строку из таблицы. может быть, это обновит data элемента treeView
     QModelIndexList tree_indexes = ui->treeView->selectionModel()->selectedIndexes();
     if (tree_indexes.size() == 1) {
-        QModelIndex selected_tree_index = tree_indexes.at(0);
-
-        if (auto && model = qobject_cast<const QStandardItemModel*>(ui->treeView->model()))
-        {
-            if (auto && selected_tag = model->itemFromIndex(selected_tree_index))
-            {
-                auto &&data = selected_tag->data(Qt::UserRole + 1).value<QStandardItemModel*>();
-                data->removeRow(data->rowCount());
-                QVariant data_variant;
-                data_variant.setValue(data);
-                selected_tag->setData(data_variant, Qt::UserRole + 1);
-            }
+        QModelIndexList table_indexes = ui->tableView->selectionModel()->selectedIndexes();
+        if (table_indexes.size() == 1) {
+            auto &&index_to_remove = table_indexes.at(0);
+            ui->tableView->model()->removeRow(index_to_remove.row());
         }
-        ui->tableView->model()->removeRow(ui->tableView->model()->rowCount());
     }
 }
-

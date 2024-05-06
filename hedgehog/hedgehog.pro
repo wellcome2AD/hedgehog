@@ -10,10 +10,12 @@ CONFIG += c++11
 
 SOURCES += \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    qlineeditdelegate.cpp
 
 HEADERS += \
-    mainwindow.h
+    mainwindow.h \
+    qlineeditdelegate.h
 
 FORMS += \
     mainwindow.ui
