@@ -8,7 +8,9 @@
 #include <QDebug>
 #include <QVariant>
 #include <QMessageBox>
-#include <QTimer>
+#include <QLineSeries>
+#include <QChart>
+#include <QChartView>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -19,6 +21,32 @@ MainWindow::MainWindow(QWidget *parent)
     auto model = new QStandardItemModel(0, 0, ui->treeView);
     ui->treeView->setModel(model);
     ui->treeView->setItemDelegateForColumn(0, new QLineEditDelegate(ui->treeView));
+
+    auto series = new QtCharts::QLineSeries;
+    series->append(0, 6);
+    series->append(2, 4);
+    series->append(3, 8);
+    series->append(7, 4);
+    series->append(10, 5);
+    *series << QPointF(11, 1) << QPointF(13, 3) << QPointF(17, 6) << QPointF(18, 3) << QPointF(20, 2);
+
+    auto chart = new QtCharts::QChart;
+    chart->legend()->hide();
+    chart->addSeries(series);
+    chart->createDefaultAxes();
+    chart->setTitle("Simple Line Chart");
+
+     auto chartView = new QtCharts::QChartView(chart);
+     ui->splitter->addWidget(chartView);
+
+     ui->splitter->setStretchFactor(0, 1);
+     ui->splitter->setStretchFactor(1, INT_MAX);
+
+     ui->splitter_2->setStretchFactor(0, 1);
+     ui->splitter_2->setStretchFactor(1, INT_MAX);
+
+     ui->splitter_3->setStretchFactor(0, INT_MAX);
+     ui->splitter_3->setStretchFactor(1, 1);
 }
 
 MainWindow::~MainWindow()

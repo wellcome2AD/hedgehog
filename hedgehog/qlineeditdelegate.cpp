@@ -19,7 +19,7 @@ static bool isXMLName(const QString &text, bool has_child_element, QString *err_
     if(!correct_begining)
     {
         if(err_text)
-                *err_text = "имя тэга должно начинаться с _ или латинской буквы";
+                *err_text = "имя тэга должно начинаться с _ или буквы";
         return res;
     }
 
