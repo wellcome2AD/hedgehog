@@ -4,13 +4,32 @@
 #include <QMouseEvent>
 #include <QSpacerItem>
 #include <QPainter>
+#include <QDebug>
 
 BlockWidget::BlockWidget(QWidget *parent)
     : QWidget(parent),
       block_name(new QLabel("block name", this)),
-      label(new QLabel),
+      label(new QLabel(this)),
       resume_pause_button(new QPushButton("||", this))
 {
+    auto spacing = 2;
+
+    QPixmap pm(11, 11);
+    pm.fill(Qt::transparent);
+    QPainter painter(&pm);
+    auto radius = 5;
+    painter.setBrush(QBrush(Qt::green));
+    auto point = QPoint(radius, radius);
+    painter.drawEllipse(point, radius, radius);
+    label->setPixmap(pm);
+    block_name->move(0, resume_pause_button->y() + resume_pause_button->height() + spacing);
+    label->setGeometry(block_name->width() - 15, block_name->y() + radius, 11, 11);
+    label->setHidden(true);
+
+    auto height = block_name->height() + resume_pause_button->height() + spacing;
+    auto width = std::max(block_name->width() + label->width() + spacing, resume_pause_button->width());
+    qDebug() << width << height;
+    setGeometry(10, 10, width, height);
     block_name->setWordWrap(true);
     block_name->setAlignment(Qt::AlignCenter);
     block_name->setFrameStyle(QFrame::Box | QFrame::Plain);
@@ -18,22 +37,9 @@ BlockWidget::BlockWidget(QWidget *parent)
     new_font.setPointSize(12);
     block_name->setFont(new_font);
 
-    auto button_layout = new QHBoxLayout();
-    button_layout->addStretch(5);
-    button_layout->addWidget(resume_pause_button);
-    button_layout->addStretch(5);
+    setMouseTracking(true);
 
-    auto name_layout = new QHBoxLayout();
-    name_layout->addWidget(block_name);
-    label->setPixmap(QPixmap(10, 10));
-    name_layout->addWidget(label);
-
-    auto layout = new QVBoxLayout(this);
-    layout->addLayout(button_layout);
-    button_layout->setParent(layout);
-    layout->addLayout(name_layout);
-    name_layout->setParent(layout);
-    setLayout(layout);
+    resume_pause_button->move((block_name->width() - resume_pause_button->width()) / 2, 0);
 }
 
 void BlockWidget::mousePressEvent(QMouseEvent *event)
@@ -45,17 +51,20 @@ void BlockWidget::mousePressEvent(QMouseEvent *event)
 
 void BlockWidget::mouseMoveEvent(QMouseEvent *event)
 {
-    QPoint delta = event->pos() - oldPos;
-    move(pos() + delta);
+    label->setVisible(true);
+    if (event->buttons() ==  Qt::LeftButton)
+    {
+        QPoint delta = event->pos() - oldPos;
+        move(pos() + delta);
+    }
+}
+
+void BlockWidget::leaveEvent(QEvent *event)
+{
+    label->setHidden(true);
 }
 
 void BlockWidget::paintEvent(QPaintEvent* event)
 {
-    QPainter painter(label);
-    painter.begin(label);
-    auto radius = 5;
-    painter.setBrush(QBrush(Qt::green));
-    auto point = QPoint(block_name->x() + block_name->width() + radius, block_name->y() + block_name->height() / 2);
-    painter.drawEllipse(point, radius, radius);
-    painter.end();
+
 }
