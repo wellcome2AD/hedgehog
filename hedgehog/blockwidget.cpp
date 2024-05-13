@@ -9,37 +9,46 @@
 BlockWidget::BlockWidget(QWidget *parent)
     : QWidget(parent),
       block_name(new QLabel("block name", this)),
-      label(new QLabel(this)),
+      left_circle(new QLabel(this)),
+      right_circle(new QLabel(this)),
       resume_pause_button(new QPushButton("||", this))
 {
-    auto spacing = 2;
-
-    QPixmap pm(11, 11);
-    pm.fill(Qt::transparent);
-    QPainter painter(&pm);
-    auto radius = 5;
-    painter.setBrush(QBrush(Qt::green));
-    auto point = QPoint(radius, radius);
-    painter.drawEllipse(point, radius, radius);
-    label->setPixmap(pm);
-    block_name->move(0, resume_pause_button->y() + resume_pause_button->height() + spacing);
-    label->setGeometry(block_name->width() - 15, block_name->y() + radius, 11, 11);
-    label->setHidden(true);
-
-    auto height = block_name->height() + resume_pause_button->height() + spacing;
-    auto width = std::max(block_name->width() + label->width() + spacing, resume_pause_button->width());
-    qDebug() << width << height;
-    setGeometry(10, 10, width, height);
     block_name->setWordWrap(true);
     block_name->setAlignment(Qt::AlignCenter);
     block_name->setFrameStyle(QFrame::Box | QFrame::Plain);
     auto new_font = block_name->font();
     new_font.setPointSize(12);
     block_name->setFont(new_font);
+    resume_pause_button->setFont(new_font);
+
+    block_name->show();
+    resume_pause_button->show();
+
+    auto label_width = block_name->width();
+    auto label_height = block_name->height();
+    auto spacing = 2, spacing2 = 3;
+    auto button_width = resume_pause_button->width();
+    auto button_height = resume_pause_button->height();
+    auto radius = 5, diameter = radius * 2;
+
+    auto width = 2 * (2 * spacing + diameter) + label_width;
+    auto height = 2 * spacing + button_height + spacing2 + label_height;
+    setGeometry(0,0, width, height);
+
+    resume_pause_button->move((width - button_width) / 2, spacing);
+    block_name->move(2 * spacing + diameter, spacing + button_height + spacing2);
+
+    QPixmap pm(diameter + 1, diameter + 1);
+    pm.fill(Qt::transparent);
+    left_circle->setPixmap(pm);
+    right_circle->setPixmap(pm);
+
+    left_circle->move(spacing, spacing + button_height + spacing2 + label_height / 2 - diameter / 2);
+    right_circle->move(width - spacing - diameter, spacing + button_height + spacing2 + label_height / 2 - diameter / 2);
 
     setMouseTracking(true);
 
-    resume_pause_button->move((block_name->width() - resume_pause_button->width()) / 2, 0);
+    connect(resume_pause_button, &QPushButton::clicked, this, &BlockWidget::on_pushButton_clicked);
 }
 
 void BlockWidget::mousePressEvent(QMouseEvent *event)
@@ -51,7 +60,14 @@ void BlockWidget::mousePressEvent(QMouseEvent *event)
 
 void BlockWidget::mouseMoveEvent(QMouseEvent *event)
 {
-    label->setVisible(true);
+    QPixmap pm(*left_circle->pixmap());
+    QPainter painter(&pm);
+    painter.setBrush(QBrush(Qt::green));
+    auto radius = 5;
+    auto point = QPoint(radius, radius);
+    painter.drawEllipse(point, radius, radius);
+    left_circle->setPixmap(pm);
+    right_circle->setPixmap(pm);
     if (event->buttons() ==  Qt::LeftButton)
     {
         QPoint delta = event->pos() - oldPos;
@@ -61,10 +77,22 @@ void BlockWidget::mouseMoveEvent(QMouseEvent *event)
 
 void BlockWidget::leaveEvent(QEvent *event)
 {
-    label->setHidden(true);
+    QPixmap pm(*left_circle->pixmap());
+    pm.fill(Qt::transparent);
+    left_circle->setPixmap(pm);
+    right_circle->setPixmap(pm);
 }
 
 void BlockWidget::paintEvent(QPaintEvent* event)
 {
 
+}
+
+void BlockWidget::on_pushButton_clicked()
+{
+    auto text = resume_pause_button->text();
+    if(text == "||")
+        resume_pause_button->setText("▶");
+    else
+        resume_pause_button->setText("||");
 }
