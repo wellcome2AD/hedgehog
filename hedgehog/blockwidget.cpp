@@ -95,13 +95,15 @@ void BlockWidget::on_pushButton_clicked()
 
 void BlockWidget::on_leftCircle_clicked(ConnectNodeWidget* start_node)
 {
-    emit start(start_node);
+    start_node->makeTransparent(false);
     qDebug() << "start from block";
+    emit start(start_node);
 }
 
 void BlockWidget::on_rightCircle_clicked(ConnectNodeWidget* start_node)
 {
-    emit start(start_node);
+    start_node->makeTransparent(false);
     qDebug() << "start from block";
+    emit start(start_node);    
 }
 

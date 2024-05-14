@@ -13,37 +13,42 @@ BlockField::BlockField(QWidget* parent)
 
 void BlockField::mouseMoveEvent(QMouseEvent *event)
 {
-    if (event->buttons() ==  Qt::LeftButton)
-    {
-        //qDebug() << "here";
-        if(select)
-        {
-            // qDebug() << "set pos";
-            pos = {event->x(), event->y()};
-            repaint();
-        }
-    }
+    //qDebug() << "here";
+    if(!select)
+        return;
+    // qDebug() << "set pos";
+    pos = {event->x(), event->y()};
+    repaint();
+
+    qDebug() << this->mapFromGlobal(select->mapToGlobal(select->pos()));
+    qDebug() << select->mapToParent(select->pos());
 }
 
 void BlockField::mousePressEvent(QMouseEvent *event)
 {
-    /*qDebug() << "unset select";
-    select = nullptr;*/
+    select->makeTransparent(true);
+    select = nullptr;
+    repaint();
 }
 
 void BlockField::paintEvent(QPaintEvent *event)
 {
     if (!select)
         return;
-    qDebug() << "paint";
     QPainter p(this);
     p.setBackground(QBrush(Qt::white));
     p.setPen(QPen(Qt::red, 1, Qt::SolidLine));
-    p.drawLine(select->pos(), pos);
+    select->makeTransparent(false);
+    auto parent = select->parentWidget();
+    p.drawLine(parent->mapToParent(select->pos()) + QPoint(5, 5), pos);
 }
 
 void BlockField::on_start(ConnectNodeWidget* start)
 {
-    qDebug() << "set select";
     select = start;
+    select->makeTransparent(false);
+    auto parent = select->parentWidget();
+    qDebug() << parent->mapToParent(select->pos()) + QPoint(5, 5);
+    pos = parent->mapToParent(select->pos()) + QPoint(5, 5);
+    repaint();
 }
