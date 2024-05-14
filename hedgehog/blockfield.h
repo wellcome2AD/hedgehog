@@ -1,12 +1,12 @@
 #ifndef BLOCKFIELD_H
 #define BLOCKFIELD_H
 
-#include <QScrollArea>
+#include <QWidget>
 #include <QPainter>
 
 class ConnectNodeWidget;
 
-class BlockField : public QScrollArea
+class BlockField : public QWidget
 {
     Q_OBJECT
 public:

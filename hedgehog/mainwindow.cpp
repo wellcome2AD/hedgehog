@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include "qlineeditdelegate.h"
 #include "blockwidget.h"
+#include "blockfield.h"
 
 #include <QFileDialog>
 #include <QXmlStreamReader>
@@ -50,8 +51,8 @@ MainWindow::MainWindow(QWidget *parent)
      ui->splitter_3->setStretchFactor(0, INT_MAX);
      ui->splitter_3->setStretchFactor(1, 1);
 
-     auto block1 = new BlockWidget(ui->scrollArea);
-     auto block2 = new BlockWidget(ui->scrollArea);
+     auto block1 = new BlockWidget(ui->scrollAreaWidgetContents);
+     auto block2 = new BlockWidget(ui->scrollAreaWidgetContents);
      block2->move(10, 60);
 }
 

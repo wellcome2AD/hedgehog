@@ -5,8 +5,9 @@
 #include <QDebug>
 
 BlockField::BlockField(QWidget* parent)
-    : QScrollArea(parent)
+    : QWidget(parent)
 {
+    qDebug() << "BlockField::BlockField";
     setMouseTracking(true);
 }
 
@@ -32,6 +33,8 @@ void BlockField::mousePressEvent(QMouseEvent *event)
 
 void BlockField::paintEvent(QPaintEvent *event)
 {
+    if (!select)
+        return;
     qDebug() << "paint";
     QPainter p(this);
     p.setBackground(QBrush(Qt::white));

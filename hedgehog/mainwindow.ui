@@ -20,7 +20,7 @@
    <string>Hedgehog</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout_3">
+   <layout class="QGridLayout" name="gridLayout_4">
     <property name="leftMargin">
      <number>0</number>
     </property>
@@ -33,7 +33,7 @@
     <property name="bottomMargin">
      <number>0</number>
     </property>
-    <item>
+    <item row="0" column="0">
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
        <number>1</number>
@@ -285,7 +285,7 @@
        <attribute name="title">
         <string>Pipeline</string>
        </attribute>
-       <layout class="QGridLayout" name="gridLayout_4">
+       <layout class="QGridLayout" name="gridLayout_3">
         <property name="leftMargin">
          <number>0</number>
         </property>
@@ -303,20 +303,23 @@
         </property>
         <item row="0" column="0">
          <widget class="QSplitter" name="splitter_5">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="orientation">
            <enum>Qt::Vertical</enum>
           </property>
           <property name="handleWidth">
            <number>0</number>
           </property>
-          <property name="childrenCollapsible">
-           <bool>false</bool>
-          </property>
           <widget class="QSplitter" name="splitter_4">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
              <horstretch>0</horstretch>
-             <verstretch>200</verstretch>
+             <verstretch>250</verstretch>
             </sizepolicy>
            </property>
            <property name="orientation">
@@ -324,9 +327,6 @@
            </property>
            <property name="handleWidth">
             <number>0</number>
-           </property>
-           <property name="childrenCollapsible">
-            <bool>false</bool>
            </property>
            <widget class="QScrollArea" name="scrollArea_2">
             <property name="sizePolicy">
@@ -344,59 +344,47 @@
                <x>0</x>
                <y>0</y>
                <width>69</width>
-               <height>226</height>
+               <height>236</height>
               </rect>
              </property>
             </widget>
            </widget>
-           <widget class="BlockField" name="scrollArea">
+           <widget class="QScrollArea" name="scrollArea">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
               <horstretch>100</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
-            <property name="verticalScrollBarPolicy">
-             <enum>Qt::ScrollBarAlwaysOn</enum>
-            </property>
-            <property name="horizontalScrollBarPolicy">
-             <enum>Qt::ScrollBarAlwaysOn</enum>
-            </property>
             <property name="widgetResizable">
              <bool>true</bool>
             </property>
-            <widget class="QWidget" name="scrollAreaWidgetContents">
+            <widget class="BlockField" name="scrollAreaWidgetContents">
              <property name="geometry">
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>448</width>
-               <height>209</height>
+               <width>465</width>
+               <height>236</height>
               </rect>
              </property>
             </widget>
            </widget>
           </widget>
-          <widget class="QWidget" name="horizontalLayoutWidget">
-           <layout class="QHBoxLayout" name="horizontalLayout_3">
-            <property name="topMargin">
-             <number>6</number>
-            </property>
-            <property name="bottomMargin">
-             <number>6</number>
-            </property>
+          <widget class="QWidget" name="">
+           <layout class="QHBoxLayout" name="horizontalLayout_5">
             <item>
-             <widget class="QTextEdit" name="textEdit_2"/>
+             <widget class="QTextEdit" name="textEdit_3"/>
             </item>
             <item>
-             <widget class="QPushButton" name="pushButton">
+             <widget class="QPushButton" name="pushButton_3">
               <property name="text">
                <string>PushButton</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="pushButton_2">
+             <widget class="QPushButton" name="pushButton_4">
               <property name="text">
                <string>PushButton</string>
               </property>
@@ -450,8 +438,8 @@
  <customwidgets>
   <customwidget>
    <class>BlockField</class>
-   <extends>QScrollArea</extends>
-   <header location="global">blockfield.h</header>
+   <extends>QWidget</extends>
+   <header>blockfield.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
