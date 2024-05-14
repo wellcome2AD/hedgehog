@@ -50,7 +50,9 @@ MainWindow::MainWindow(QWidget *parent)
      ui->splitter_3->setStretchFactor(0, INT_MAX);
      ui->splitter_3->setStretchFactor(1, 1);
 
-     new BlockWidget(ui->scrollArea);
+     auto block1 = new BlockWidget(ui->scrollArea);
+     auto block2 = new BlockWidget(ui->scrollArea);
+     block2->move(10, 60);
 }
 
 MainWindow::~MainWindow()

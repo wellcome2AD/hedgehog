@@ -1,18 +1,26 @@
 #include "blockwidget.h"
+#include "connectnodewidget.h"
+#include "blockfield.h"
 
-#include <QVBoxLayout>
 #include <QMouseEvent>
-#include <QSpacerItem>
 #include <QPainter>
 #include <QDebug>
 
-BlockWidget::BlockWidget(QWidget *parent)
+BlockWidget::BlockWidget(BlockField *parent)
     : QWidget(parent),
       block_name(new QLabel("block name", this)),
-      left_circle(new QLabel(this)),
-      right_circle(new QLabel(this)),
+      left_node(new ConnectNodeWidget(Incoming, this)),
+      right_node(new ConnectNodeWidget(Outgoing, this)),
       resume_pause_button(new QPushButton("||", this))
 {
+    connect(left_node, &ConnectNodeWidget::start, this, &BlockWidget::on_leftCircle_clicked);
+    connect(right_node, &ConnectNodeWidget::start, this, &BlockWidget::on_rightCircle_clicked);
+
+    connect(this, &BlockWidget::start, parent, &BlockField::on_start);
+
+    /*connect(left_node, &ConnectNodeWidget::end, this, &BlockWidget::on_leftCircle_clicked);
+    connect(right_node, &ConnectNodeWidget::end, this, &BlockWidget::on_rightCircle_clicked);*/
+
     block_name->setWordWrap(true);
     block_name->setAlignment(Qt::AlignCenter);
     block_name->setFrameStyle(QFrame::Box | QFrame::Plain);
@@ -38,13 +46,8 @@ BlockWidget::BlockWidget(QWidget *parent)
     resume_pause_button->move((width - button_width) / 2, spacing);
     block_name->move(2 * spacing + diameter, spacing + button_height + spacing2);
 
-    QPixmap pm(diameter + 1, diameter + 1);
-    pm.fill(Qt::transparent);
-    left_circle->setPixmap(pm);
-    right_circle->setPixmap(pm);
-
-    left_circle->move(spacing, spacing + button_height + spacing2 + label_height / 2 - diameter / 2);
-    right_circle->move(width - spacing - diameter, spacing + button_height + spacing2 + label_height / 2 - diameter / 2);
+    left_node->move(spacing, spacing + button_height + spacing2 + label_height / 2 - diameter / 2);
+    right_node->move(width - spacing - diameter, spacing + button_height + spacing2 + label_height / 2 - diameter / 2);
 
     setMouseTracking(true);
 
@@ -60,14 +63,8 @@ void BlockWidget::mousePressEvent(QMouseEvent *event)
 
 void BlockWidget::mouseMoveEvent(QMouseEvent *event)
 {
-    QPixmap pm(*left_circle->pixmap());
-    QPainter painter(&pm);
-    painter.setBrush(QBrush(Qt::green));
-    auto radius = 5;
-    auto point = QPoint(radius, radius);
-    painter.drawEllipse(point, radius, radius);
-    left_circle->setPixmap(pm);
-    right_circle->setPixmap(pm);
+    left_node->makeTransparent(false);
+    right_node->makeTransparent(false);
     if (event->buttons() ==  Qt::LeftButton)
     {
         QPoint delta = event->pos() - oldPos;
@@ -77,10 +74,8 @@ void BlockWidget::mouseMoveEvent(QMouseEvent *event)
 
 void BlockWidget::leaveEvent(QEvent *event)
 {
-    QPixmap pm(*left_circle->pixmap());
-    pm.fill(Qt::transparent);
-    left_circle->setPixmap(pm);
-    right_circle->setPixmap(pm);
+    left_node->makeTransparent(true);
+    right_node->makeTransparent(true);
 }
 
 void BlockWidget::paintEvent(QPaintEvent* event)
@@ -96,3 +91,16 @@ void BlockWidget::on_pushButton_clicked()
     else
         resume_pause_button->setText("||");
 }
+
+void BlockWidget::on_leftCircle_clicked(ConnectNodeWidget* start_node)
+{
+    emit start(start_node);
+    qDebug() << "start from block";
+}
+
+void BlockWidget::on_rightCircle_clicked(ConnectNodeWidget* start_node)
+{
+    emit start(start_node);
+    qDebug() << "start from block";
+}
+

@@ -88,7 +88,7 @@
            <property name="childrenCollapsible">
             <bool>false</bool>
            </property>
-           <widget class="QWidget" name="">
+           <widget class="QWidget" name="layoutWidget">
             <layout class="QVBoxLayout" name="verticalLayout">
              <property name="spacing">
               <number>0</number>
@@ -349,12 +349,18 @@
              </property>
             </widget>
            </widget>
-           <widget class="QScrollArea" name="scrollArea">
+           <widget class="BlockField" name="scrollArea">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
               <horstretch>100</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
+            </property>
+            <property name="verticalScrollBarPolicy">
+             <enum>Qt::ScrollBarAlwaysOn</enum>
+            </property>
+            <property name="horizontalScrollBarPolicy">
+             <enum>Qt::ScrollBarAlwaysOn</enum>
             </property>
             <property name="widgetResizable">
              <bool>true</bool>
@@ -364,8 +370,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>465</width>
-               <height>226</height>
+               <width>448</width>
+               <height>209</height>
               </rect>
              </property>
             </widget>
@@ -441,6 +447,14 @@
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>BlockField</class>
+   <extends>QScrollArea</extends>
+   <header location="global">blockfield.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
