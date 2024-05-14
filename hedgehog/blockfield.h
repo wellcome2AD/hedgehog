@@ -16,6 +16,7 @@ protected:
     void mouseMoveEvent(QMouseEvent *event)  override;
     void mousePressEvent(QMouseEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
+    void keyPressEvent(QKeyEvent *event) override;
 
 private:
     static QPoint coordToBlockField(ConnectNodeWidget* n);
@@ -26,8 +27,8 @@ public slots:
 private:
     QPoint pos;
     ConnectNodeWidget* selected_node = nullptr;
-    QMap<ConnectNodeWidget*, ConnectNodeWidget*> _map_of_selected_nodes;
-    QMap<ConnectNodeWidget*, ConnectNodeWidget*> _connection_map;
+    QMap<ConnectNodeWidget*, QVector<ConnectNodeWidget*>> _map_of_selected_nodes;
+    QMap<ConnectNodeWidget*, QVector<ConnectNodeWidget*>> _connection_map;
 };
 
 #endif // BLOCKFIELD_H

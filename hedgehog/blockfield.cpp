@@ -11,6 +11,7 @@ BlockField::BlockField(QWidget* parent)
 {
     qDebug() << "BlockField::BlockField";
     setMouseTracking(true);
+    setFocus(Qt::FocusReason::ActiveWindowFocusReason);
 }
 
 void BlockField::mouseMoveEvent(QMouseEvent *event)
@@ -40,19 +41,21 @@ void BlockField::mousePressEvent(QMouseEvent *event)
         repaint();
     }
 
-    QPainter p(this);
     for(auto it = _connection_map.begin(); it != _connection_map.end(); ++it)
     {
         auto start = it.key();
-        auto end = it.value();
         auto start_pos = coordToBlockField(start);
-        auto end_pos = coordToBlockField(end);
-        bool find_line = isPointOnLine(QLine(start_pos, end_pos), event->pos());
-        if(find_line)
+        for(auto end_node_it = it.value().begin(); end_node_it != it.value().end(); ++end_node_it)
         {
-            _map_of_selected_nodes[start] = end;
-            repaint();
-            return;
+            auto end = *end_node_it;
+            auto end_pos = coordToBlockField(end);
+            bool find_line = isPointOnLine(QLine(start_pos, end_pos), event->pos());
+            if(find_line)
+            {
+                _map_of_selected_nodes[start].append(end);
+                repaint();
+                return;
+            }
         }
     }
     _map_of_selected_nodes.clear();
@@ -68,18 +71,22 @@ void BlockField::paintEvent(QPaintEvent *event)
     for(auto it = _connection_map.begin(); it != _connection_map.end(); ++it)
     {
         auto start = it.key();
-        auto end = it.value();
         auto start_pos = coordToBlockField(start);
-        auto end_pos = coordToBlockField(end);
-        start->makeTransparent(false);
-        end->makeTransparent(false);
-        if(_map_of_selected_nodes.value(start, nullptr) == end)
+        for(auto end_node_it = it.value().begin(); end_node_it != it.value().end(); ++end_node_it)
         {
-            selected_lines.append({start_pos, end_pos});
-        }
-        else
-        {
-            unselected_lines.append({start_pos, end_pos});
+            auto end = *end_node_it;
+            auto end_pos = coordToBlockField(end);
+            start->makeTransparent(false);
+            end->makeTransparent(false);
+
+            if(_map_of_selected_nodes.value(start).contains(end))
+            {
+                selected_lines.append({start_pos, end_pos});
+            }
+            else
+            {
+                unselected_lines.append({start_pos, end_pos});
+            }
         }
     }
 
@@ -94,6 +101,22 @@ void BlockField::paintEvent(QPaintEvent *event)
 
     selected_node->makeTransparent(false);
     p.drawLine(coordToBlockField(selected_node), pos);
+}
+
+void BlockField::keyPressEvent(QKeyEvent *event)
+{
+    if(event->key() == Qt::Key::Key_Delete)
+    {
+        for(auto start_node = _map_of_selected_nodes.begin(); start_node != _map_of_selected_nodes.end(); ++start_node)
+        {
+            for(auto end_node_it = start_node.value().begin(); end_node_it != start_node.value().end(); ++end_node_it)
+                _connection_map[start_node.key()].removeAll(*end_node_it);
+            if(start_node.value().empty())
+                _connection_map.remove(start_node.key());
+        }
+        _map_of_selected_nodes.clear();
+        repaint();
+    }
 }
 
 QPoint BlockField::coordToBlockField(ConnectNodeWidget* n)
@@ -113,7 +136,7 @@ void BlockField::on_start(ConnectNodeWidget* start)
     {
         if(selected_node != start && selected_node->parent() != start->parent())
         {
-            _connection_map[selected_node] = start;
+            _connection_map[selected_node].append(start);
             selected_node->makeTransparent(false);
             start->makeTransparent(false);
         }        
@@ -122,11 +145,6 @@ void BlockField::on_start(ConnectNodeWidget* start)
     }
     else
     {
-        if (_connection_map.value(selected_node, nullptr))
-        {
-            _connection_map.remove(selected_node);
-            repaint();
-        }
         selected_node = start;
         selected_node->makeTransparent(false);
         pos = coordToBlockField(selected_node);

@@ -61,6 +61,13 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+bool MainWindow::event(QEvent* e)
+{
+    if(e->type() == QEvent::KeyPress)
+        return qobject_cast<QObject*>(ui->scrollAreaWidgetContents)->event(e);
+    return QMainWindow::event(e);
+}
+
 QStandardItem *MainWindow::createTag(QStandardItem * parent_tag, QStandardItemModel *attribute_table_view, const QString &text)
 {
     if(attribute_table_view == nullptr)
