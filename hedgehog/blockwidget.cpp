@@ -59,6 +59,7 @@ void BlockWidget::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
         oldPos = event->pos();
+        parentWidget()->repaint();
     }
 }
 
@@ -70,6 +71,7 @@ void BlockWidget::mouseMoveEvent(QMouseEvent *event)
     {
         QPoint delta = event->pos() - oldPos;
         move(pos() + delta);
+        parentWidget()->repaint();
     }
 }
 

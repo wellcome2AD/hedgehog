@@ -2,7 +2,7 @@
 #define BLOCKFIELD_H
 
 #include <QWidget>
-#include <QPainter>
+#include <QMap>
 
 class ConnectNodeWidget;
 
@@ -17,12 +17,17 @@ protected:
     void mousePressEvent(QMouseEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
 
+private:
+    static QPoint coordToBlockField(ConnectNodeWidget* n);
+
 public slots:
     void on_start(ConnectNodeWidget* start);
 
 private:
     QPoint pos;
-    ConnectNodeWidget* select = nullptr;
+    ConnectNodeWidget* selected_node = nullptr;
+    QMap<ConnectNodeWidget*, ConnectNodeWidget*> _map_of_selected_nodes;
+    QMap<ConnectNodeWidget*, ConnectNodeWidget*> _connection_map;
 };
 
 #endif // BLOCKFIELD_H
