@@ -14,14 +14,22 @@
 #include <QChart>
 #include <QChartView>
 
+static void createDefaultBlock(BlockField *parent)
+{
+    auto default_block = new BlockWidget(parent);
+    default_block->show();
+    default_block->move(parent->rect().center());
+}
+
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
 
-    auto model = new QStandardItemModel(0, 0, ui->treeView);
-    ui->treeView->setModel(model);
+    auto tree_model = new QStandardItemModel(0, 0, ui->treeView);
+    ui->treeView->setModel(tree_model);
     ui->treeView->setItemDelegateForColumn(0, new QLineEditDelegate(ui->treeView));
 
     for (auto i = 0; i < 4; ++i)
@@ -51,9 +59,25 @@ MainWindow::MainWindow(QWidget *parent)
      ui->splitter_3->setStretchFactor(0, INT_MAX);
      ui->splitter_3->setStretchFactor(1, 1);
 
-     auto block1 = new BlockWidget(ui->scrollAreaWidgetContents);
-     auto block2 = new BlockWidget(ui->scrollAreaWidgetContents);
-     block2->move(10, 60);
+     auto list_model = new QStandardItemModel(0, 0, ui->listView);
+     ui->listView->setModel(list_model);
+     QStandardItem *parent_item = list_model->invisibleRootItem();
+     auto block_list_element = new QStandardItem("block_name");
+     QVariant data;
+     data.setValue(reinterpret_cast<void*>(&createDefaultBlock));
+     block_list_element->setData(data);
+
+     parent_item->appendRow(block_list_element);
+     block_list_element->setFlags(block_list_element->flags() ^ Qt::ItemIsEditable);
+
+     auto  sp = ui->scrollAreaWidgetContents->sizePolicy();
+     sp.setHorizontalStretch(INT_MAX);
+     sp.setVerticalStretch(INT_MAX);
+     ui->scrollAreaWidgetContents->setSizePolicy(sp);
+     ui->splitter_4->setStretchFactor(0, 1);
+
+     ui->splitter_5->setStretchFactor(1, 1);
+     ui->splitter_5->setStretchFactor(0, INT_MAX);
 }
 
 MainWindow::~MainWindow()
@@ -329,3 +353,32 @@ void MainWindow::on_pushButton_minus_table_clicked()
         }
     }
 }
+
+void MainWindow::on_listView_doubleClicked(const QModelIndex &index)
+{
+    auto data = index.data(Qt::UserRole + 1);
+    auto func = data.value<void*>();
+    auto reallyFunc = reinterpret_cast<decltype(&createDefaultBlock)>(func);
+    reallyFunc(ui->scrollAreaWidgetContents);
+}
+
+
+void MainWindow::on_pushButton_3_pressed()
+{
+    auto text = ui->pushButton_3->text();
+    if(text == "||")
+        ui->pushButton_3->setText("▶");
+    else
+    {
+        ui->pushButton_3->setText("||");
+        ui->pushButton_4->setEnabled(true);
+    }
+}
+
+
+void MainWindow::on_pushButton_4_pressed()
+{
+    ui->pushButton_4->setEnabled(false);
+    ui->pushButton_3->setText("▶");
+}
+
